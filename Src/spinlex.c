@@ -13,7 +13,7 @@
 #include "spin.h"
 #include "y.tab.h"
 
-#define MAXINL	16	/* max recursion depth inline fcts */
+#define MAXINL	32	/* max recursion depth inline fcts */
 #define MAXPAR	32	/* max params to an inline call */
 #define MAXLEN	512	/* max len of an actual parameter text */
 
@@ -51,7 +51,7 @@ extern int	implied_semis, ltl_mode, in_seq, par_cnt;
 
 short	has_stack = 0;
 int	lineno  = 1;
-int	scope_seq[128], scope_level = 0;
+int	scope_seq[256], scope_level = 0;
 char	CurScope[MAXSCOPESZ];
 char	yytext[2048];
 FILE	*yyin, *yyout;
@@ -702,7 +702,8 @@ c_add_loc(FILE *fd, char *s)	/* state vector entries for proctype s */
 	for (r = c_added; r; r = r->nxt)	/* pickup local decls */
 	{	if (strncmp(r->t->name, " Local", strlen(" Local")) == 0)
 		{	p = r->t->name + strlen(" Local");
-fprintf(fd, "/* XXX p=<%s>, s=<%s>, buf=<%s> r->s->name=<%s>XXX */\n", p, s, buf, r->s->name);
+			fprintf(fd, "/* XXX p=<%s>, s=<%s>, buf=<%s> r->s->name=<%s>XXX */\n",
+				p, s, buf, r->s->name);
 			while (*p == ' ' || *p == '\t')
 			{	p++;
 			}
@@ -1667,6 +1668,8 @@ not_expanded:
 	{	switch (c) {
 		case '-': c = follow('>', IMPLIES,    '-'); break;
 		case '[': c = follow(']', ALWAYS,     '['); break;
+		case '/': c = follow('\\', AND, '/'); break;
+		case '\\': c = follow('/', OR, '\\'); break;
 		case '<': c = follow('>', EVENTUALLY, '<');
 			  if (c == '<')
 			  {	c = Getchar();
@@ -1702,8 +1705,16 @@ not_expanded:
 	case '|': c = follow('|', OR, '|'); break;
 	case ';': c = SEMI; break;
 	case '.': c = follow('.', DOTDOT, '.'); break;
-	case '{': scope_seq[scope_level++]++; set_cur_scope(); break;
-	case '}': scope_level--; set_cur_scope(); break;
+	case '{':
+		assert(scope_level < sizeof(scope_seq)-1);
+		scope_seq[scope_level++]++;
+		set_cur_scope();
+		break;
+	case '}':
+		assert(scope_level > 0);
+		scope_level--;
+		set_cur_scope();
+		break;
 	default : break;
 	}
 	ValToken(0, c)

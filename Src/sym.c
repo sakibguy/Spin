@@ -119,7 +119,6 @@ lookup(char *s)
 		&&  samename(sp->owner, owner))
 		{	return sp;		/* global */
 	}	}
-
 	sp = (Symbol *) emalloc(sizeof(Symbol));
 	sp->name = (char *) emalloc(strlen(s) + 1);
 	strcpy(sp->name, s);
@@ -394,7 +393,6 @@ find_mtype_list(const char *s)
 	{	if (strcmp(lst->nm, s) == 0)
 		{	return &(lst->mt);
 	}	}
-
 	/* not found, create it */
 	lst = (Mtypes_t *) emalloc(sizeof(Mtypes_t));
 	lst->nm = (char *) emalloc(strlen(s)+1);
@@ -434,7 +432,6 @@ setmtype(Lextok *mtype_name, Lextok *m)
 		||   n->lft->ntyp != NAME
 		||   n->lft->lft)	/* indexed variable */
 			fatal("bad mtype definition", (char *)0);
-
 		/* label the name */
 		if (n->lft->sym->type != MTYPE)
 		{	n->lft->sym->hidden |= 128;	/* is used */
@@ -463,6 +460,19 @@ which_mtype(const char *str) /* which mtype is str, 0 if not an mtype at all  */
 		{	return lst->nm;
 	}	}
 
+	return (char *) 0;
+}
+
+char *
+which_mtype_val(const int v) /* which mtype is v, 0 if not an mtype at all  */
+{	Mtypes_t *lst;
+	Lextok *n;
+
+	for (lst = Mtypes; lst; lst = lst->nxt)
+	for (n = lst->mt; n; n = n->rgt)
+	{	if (v == n->lft->sym->ini->val)
+		{	return lst->nm;
+	}	}
 	return (char *) 0;
 }
 
